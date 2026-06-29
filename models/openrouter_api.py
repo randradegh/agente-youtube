@@ -42,6 +42,7 @@ class OpenRouterClient:
         system: str = "",
         temperature: float = 0.3,
         max_tokens: int = 4096,
+        timeout: int = 120,
     ) -> str:
         """Envía un mensaje al modelo y devuelve la respuesta."""
         messages = []
@@ -57,12 +58,20 @@ class OpenRouterClient:
                     messages=messages,
                     temperature=temperature,
                     max_tokens=max_tokens,
+                    timeout=timeout,
                     extra_headers={
                         "HTTP-Referer": "https://github.com/randradegh/agente-youtube",
                         "X-Title": "Agente YouTube",
+                        "Accept-Language": "es-MX",
                     },
                 )
-                return resp.choices[0].message.content.strip()
+                content = resp.choices[0].message.content
+                if content is None:
+                    raise ValueError(
+                        "Modelo devolvió respuesta vacía (content=None) — "
+                        "posiblemente una llamada a herramienta o error de formato"
+                    )
+                return content.strip()
 
             except Exception as e:
                 last_error = e

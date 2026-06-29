@@ -81,6 +81,7 @@ https://youtu.be/GhIjKl,
 | `analisis` | Analisis tecnico/desglose estructurado |
 | `notas` | Notas de estudio: conceptos y referencias |
 | `transcripcion` | Transcripcion limpia (sin timestamps) |
+| `ideas_mkt` | Ideas de marketing: frases rescatadas, justificacion y propuesta de uso. Termina con "¿Podrias estar equivocado?" |
 
 ## Modelos
 

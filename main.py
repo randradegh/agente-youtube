@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from coordinator import Coordinator
 
-VALID_TYPES = {"resumen", "articulo", "tldr", "analisis", "notas", "transcripcion"}
+VALID_TYPES = {"resumen", "articulo", "tldr", "analisis", "notas", "transcripcion", "ideas_mkt"}
 
 
 def _read_csv(path: str) -> list[tuple[str, str]]:
@@ -65,8 +65,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--reviewer-model",
-        default="nvidia/nemotron-3-super-120b-a12b:free",
-        help="Modelo OpenRouter para Reviewer (default: nvidia/nemotron-3-super-120b-a12b:free)",
+        default="mistralai/mistral-nemo",
+        help="Modelo OpenRouter para Reviewer (default: mistralai/mistral-nemo)",
     )
     parser.add_argument(
         "--generator-model",

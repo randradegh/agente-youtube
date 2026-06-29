@@ -12,9 +12,17 @@ from models.openrouter_api import OpenRouterClient
 
 class Reviewer(Agent):
     """Revisa el texto de la transcripción: elimina ruido, unifica párrafos,
-    detecta cambios de orador, corrige segmentación."""
+    detecta cambios de orador, corrige segmentación.
 
-    def __init__(self, model: str = "nvidia/nemotron-3-super-120b-a12b:free", api_key: str = ""):
+    Para transcripciones largas (>50K chars) se omite la revisión porque
+    el modelo gratuito (Nemotron) tiende a rate-limit o devolver basura
+    con entradas muy grandes. El Generator (DeepSeek V3) maneja bien
+    el texto crudo directamente.
+    """
+
+    MAX_CHARS = 50000
+
+    def __init__(self, model: str = "mistralai/mistral-nemo", api_key: str = ""):
         self.client = OpenRouterClient(api_key=api_key, model=model)
         self._system_prompt = self._load_prompt()
 
@@ -24,10 +32,23 @@ class Reviewer(Agent):
         if not texto_crudo.strip():
             return {"error": "Texto vacío para revisar", "ok": False}
 
+        # Si el texto es muy largo, pasar crudo — el Generator
+        # (DeepSeek V3) lo maneja bien
+        if len(texto_crudo) > self.MAX_CHARS:
+            return {
+                "texto": texto_crudo,
+                "ok": False,
+                "error": (
+                    f"Texto muy largo ({len(texto_crudo)} chars), "
+                    f"se omite revisión para evitar corrupción"
+                ),
+            }
+
         try:
             texto_revisado = self.client.chat(
                 message=texto_crudo,
                 system=self._system_prompt,
+                timeout=180,
             )
             return {"texto": texto_revisado, "ok": True}
 
@@ -52,9 +73,10 @@ class Reviewer(Agent):
                 return f.read().strip()
         except FileNotFoundError:
             return (
-                "Eres un revisor de transcripciones. Tu tarea es limpiar "
+                "Eres un revisor de transcripciones en español de México. Tu tarea es limpiar "
                 "el texto crudo de una transcripción de YouTube. "
                 "Elimina marcas de tiempo, corrige la segmentación en párrafos "
                 "lógicos, detecta cambios de orador con interlineados, "
                 "y unifica el texto. Conserva todo el contenido."
+                "Prioriza el español de México."
             )
