@@ -4,6 +4,7 @@ Coordinator — Orquesta el pipeline de agentes para cada URL.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from agents.transcriber import Transcriber
@@ -95,12 +96,14 @@ class Coordinator:
                 f"    ⚠ {revisado.get('error', '')} — usando texto crudo"
             )
 
+        hoy = date.today().isoformat()  # 2026-07-04
+
         # Paso 3: Generación
         progress.print(
             f"  [bold cyan]▶ Generator[/] — generando {tipo}..."
         )
         documento = self.generator.process(
-            {"texto": texto_revisado, "tipo": tipo}
+            {"texto": texto_revisado, "tipo": tipo, "fecha": hoy}
         )
         if not documento.get("ok", False):
             progress.print(

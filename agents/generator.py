@@ -46,11 +46,12 @@ class Generator(Agent):
     def process(self, data: dict[str, Any]) -> dict[str, Any]:
         texto: str = data.get("texto", "")
         tipo: str = data.get("tipo", "resumen")
+        fecha: str = data.get("fecha", "")
 
         if not texto.strip():
             return {"error": "Texto vacío para generar", "ok": False}
 
-        system_prompt = self._build_prompt(tipo)
+        system_prompt = self._build_prompt(tipo, fecha)
         max_tokens = self._max_tokens_for(tipo)
 
         try:
@@ -94,7 +95,7 @@ class Generator(Agent):
         return limites.get(tipo, 4096)
 
     @staticmethod
-    def _build_prompt(tipo: str) -> str:
+    def _build_prompt(tipo: str, fecha: str = "") -> str:
         """Construye el system prompt según el tipo de documento."""
         import os
 
@@ -104,7 +105,10 @@ class Generator(Agent):
         try:
             with open(prompt_path, encoding="utf-8") as f:
                 template = f.read()
-                return template.replace("{{TIPO}}", tipo)
+                template = template.replace("{{TIPO}}", tipo)
+                if fecha:
+                    template = template.replace("{{FECHA}}", fecha)
+                return template
         except FileNotFoundError:
             return (
                 f"Genera un documento de tipo '{tipo}' basado en la transcripción "
