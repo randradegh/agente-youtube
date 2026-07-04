@@ -15,6 +15,9 @@ wheels/
 # Output
 output/
 
+# URLs de entrada (cada lote cambia)
+urls.csv
+
 # OS
 .DS_Store
 Thumbs.db
