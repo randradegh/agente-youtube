@@ -15,15 +15,26 @@ from coordinator import Coordinator
 
 VALID_TYPES = {"resumen", "articulo", "tldr", "analisis", "notas", "transcripcion", "ideas_mkt"}
 
+TIPO_DESCRIPTIONS: dict[str, str] = {
+    "tldr": "TL;DR conciso. Solo las ideas y conceptos más relevantes (25-35 líneas).",
+    "resumen": "Resumen ejecutivo con bullet points y conclusión (2-3 párrafos).",
+    "notas": "Notas de estudio organizadas por conceptos, preguntas y referencias.",
+    "analisis": "Análisis técnico con puntos clave, argumentos y desglose (40-50 líneas).",
+    "articulo": "Artículo completo tipo blog con introducción, secciones y conclusión (800+ palabras).",
+    "transcripcion": "Transcripción limpia y formateada, sin timestamps.",
+    "ideas_mkt": "Extrae ideas de marketing con citas textuales, justificación y propuesta de uso.",
+}
 
-def _read_csv(path: str) -> list[tuple[str, str]]:
-    """Lee urls.csv, valida cada fila y retorna lista de (url, tipo)."""
-    items: list[tuple[str, str]] = []
+
+def _read_csv(path: str) -> list[tuple[str, str, bool]]:
+    """Lee urls.csv, valida cada fila y retorna lista de (url, tipo, usar_moa)."""
+    items: list[tuple[str, str, bool]] = []
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for i, row in enumerate(reader, start=2):  # i = linea real (header=1)
             url = row.get("urls", "").strip()
             tipo = row.get("type", "").strip().lower()
+            moa_raw = row.get("moa", "").strip().lower()
 
             if not url:
                 continue  # fila vacia, se salta
@@ -36,7 +47,10 @@ def _read_csv(path: str) -> list[tuple[str, str]]:
             if not tipo:
                 tipo = "tldr"
 
-            items.append((url, tipo))
+            # MoA: T/t = True, cualquier otra cosa (incluyendo vacio/F/f) = False
+            usar_moa = moa_raw in ("t", "true")
+
+            items.append((url, tipo, usar_moa))
 
     return items
 
@@ -44,13 +58,24 @@ def _read_csv(path: str) -> list[tuple[str, str]]:
 def main() -> None:
     load_dotenv()
 
+    desc_lines = "\n  ".join(
+        f"{k:15s} {v}" for k, v in sorted(TIPO_DESCRIPTIONS.items())
+    )
     parser = argparse.ArgumentParser(
-        description="Agente YouTube - Procesa videos con agentes de IA via OpenRouter"
+        description="Agente YouTube - Procesa videos con agentes de IA via OpenRouter",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Tipos de documento (columna 'type' en el CSV):\n"
+            f"  {desc_lines}\n"
+            "\n"
+            "Por defecto (type vacío o ausente): tldr\n"
+        ),
     )
     parser.add_argument(
         "--csv",
         default="urls.csv",
-        help="Archivo CSV con columnas urls,type (default: urls.csv). "
+        help="Archivo CSV con columnas urls,type,moa (default: urls.csv). "
+        "Ver 'Tipos de documento' abajo para valores de type. "
         "Type vacio = tldr",
     )
     parser.add_argument(
@@ -72,6 +97,16 @@ def main() -> None:
         "--generator-model",
         default="deepseek/deepseek-chat",
         help="Modelo OpenRouter para Generator (default: deepseek/deepseek-chat)",
+    )
+    parser.add_argument(
+        "--aggregator-model",
+        default="deepseek/deepseek-v4-flash",
+        help="Modelo OpenRouter para Aggregator en modo MoA (default: deepseek/deepseek-v4-flash)",
+    )
+    parser.add_argument(
+        "--proponent-models",
+        default="deepseek/deepseek-v4-flash,qwen/qwen3.6-flash",
+        help="Modelos proponentes separados por coma para MoA (default: deepseek/deepseek-v4-flash,qwen/qwen3.6-flash)",
     )
     parser.add_argument(
         "--api-key",
@@ -98,12 +133,12 @@ def main() -> None:
         sys.exit(1)
 
     print(f"Procesando {len(items)} video(s):")
-    for url, tipo in items:
-        print(f"  * {url} -> {tipo}")
-    print(f"  Transcriber: {args.transcriber_model}")
-    print(f"  Reviewer:    {args.reviewer_model}")
-    print(f"  Generator:   {args.generator_model}")
+    for url, tipo, usar_moa in items:
+        moa_label = " [MoA]" if usar_moa else ""
+        print(f"  * {url} -> {tipo}{moa_label}")
     print()
+
+    proponent_models = args.proponent_models.split(",") if args.proponent_models else []
 
     coordinator = Coordinator(
         output_dir=args.output_dir,
@@ -112,6 +147,8 @@ def main() -> None:
         generator_model=args.generator_model,
         api_key=args.api_key or os.getenv("OPENROUTER_API_KEY", ""),
         verbose=args.verbose,
+        aggregator_model=args.aggregator_model,
+        proponent_models=proponent_models,
     )
 
     resultados = coordinator.process_urls(items)

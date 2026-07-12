@@ -47,11 +47,13 @@ class Generator(Agent):
         texto: str = data.get("texto", "")
         tipo: str = data.get("tipo", "resumen")
         fecha: str = data.get("fecha", "")
+        autor: str = data.get("autor", "")
+        sitio: str = data.get("sitio", "")
 
         if not texto.strip():
             return {"error": "Texto vacío para generar", "ok": False}
 
-        system_prompt = self._build_prompt(tipo, fecha)
+        system_prompt = self._build_prompt(tipo, fecha, autor, sitio)
         max_tokens = self._max_tokens_for(tipo)
 
         try:
@@ -84,7 +86,7 @@ class Generator(Agent):
     def _max_tokens_for(tipo: str) -> int:
         """Retorna max_tokens según el tipo de documento."""
         limites = {
-            "tldr": 1500,
+            "tldr": 3072,
             "resumen": 2048,
             "notas": 2048,
             "analisis": 3072,
@@ -95,7 +97,7 @@ class Generator(Agent):
         return limites.get(tipo, 4096)
 
     @staticmethod
-    def _build_prompt(tipo: str, fecha: str = "") -> str:
+    def _build_prompt(tipo: str, fecha: str = "", autor: str = "", sitio: str = "") -> str:
         """Construye el system prompt según el tipo de documento."""
         import os
 
@@ -108,6 +110,10 @@ class Generator(Agent):
                 template = template.replace("{{TIPO}}", tipo)
                 if fecha:
                     template = template.replace("{{FECHA}}", fecha)
+                if autor:
+                    template = template.replace("{{AUTOR}}", autor)
+                if sitio:
+                    template = template.replace("{{SITIO}}", sitio)
                 return template
         except FileNotFoundError:
             return (

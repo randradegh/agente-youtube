@@ -14,17 +14,14 @@ from agents.base import Agent
 
 
 class Transcriber(Agent):
-    """Obtiene transcripción y título de videos de YouTube."""
-
-    TITLE_PATTERNS = [
-        r'<title[^>]*>(.*?)</title>',
-    ]
+    """Obtiene transcripción y metadatos de videos de YouTube."""
 
     def __init__(self):
         self._api = YouTubeTranscriptApi()
 
-    def _fetch_title(self, video_id: str) -> str:
-        """Obtiene el título real del video desde la página de YouTube."""
+    def _fetch_metadata(self, video_id: str) -> dict[str, str]:
+        """Obtiene título, nombre del canal y URL del canal desde la página de YouTube."""
+        meta = {"titulo": video_id, "autor": "", "sitio": ""}
         try:
             resp = requests.get(
                 f"https://www.youtube.com/watch?v={video_id}",
@@ -37,18 +34,55 @@ class Transcriber(Agent):
                     ),
                 },
             )
+            html = resp.text
+
+            # Título desde <title>
             match = re.search(
                 r'<title[^>]*>(.*?)</title>',
-                resp.text,
+                html,
                 re.IGNORECASE | re.DOTALL,
             )
             if match:
-                title = match.group(1)
-                title = re.sub(r'\s*-\s*YouTube\s*$', '', title).strip()
-                return title
+                titulo = match.group(1)
+                titulo = re.sub(r'\s*-\s*YouTube\s*$', '', titulo).strip()
+                meta["titulo"] = titulo
+
+            # Autor y canal desde ytInitialData
+            init_match = re.search(
+                r'ytInitialData\s*=\s*({.*?});\s*</script>',
+                html,
+                re.DOTALL,
+            )
+            if init_match:
+                import json
+                data = json.loads(init_match.group(1))
+                contents = (
+                    data.get("contents", {})
+                    .get("twoColumnWatchNextResults", {})
+                    .get("results", {})
+                    .get("results", {})
+                    .get("contents", [])
+                )
+                for c in contents:
+                    owner = (
+                        c.get("videoSecondaryInfoRenderer", {})
+                        .get("owner", {})
+                        .get("videoOwnerRenderer", {})
+                    )
+                    if owner:
+                        runs = owner.get("title", {}).get("runs", [])
+                        if runs:
+                            meta["autor"] = runs[0].get("text", "")
+                        nav = owner.get("navigationEndpoint", {}).get("browseEndpoint", {})
+                        canonical = nav.get("canonicalBaseUrl", "")
+                        if canonical:
+                            meta["sitio"] = f"https://www.youtube.com{canonical}"
+                        break
+
         except Exception:
             pass
-        return video_id
+
+        return meta
 
     def process(self, data: dict[str, Any]) -> dict[str, Any]:
         url: str = data["url"]
@@ -63,11 +97,16 @@ class Transcriber(Agent):
             texto = " ".join(
                 segment.text for segment in transcript
             )
-            titulo = self._fetch_title(video_id)
+            meta = self._fetch_metadata(video_id)
+            titulo = meta["titulo"]
+            autor = meta["autor"]
+            sitio = meta["sitio"]
 
             return {
                 "video_id": video_id,
                 "titulo": titulo,
+                "autor": autor,
+                "sitio": sitio,
                 "url": url,
                 "texto": texto.strip(),
                 "idioma": "auto",
