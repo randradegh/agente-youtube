@@ -27,7 +27,7 @@ Tu tarea es sintetizar el mejor documento posible de tipo "{{TIPO}}" combinando 
 ## Formato
 
 Usa Markdown. Títulos con #, subtítulos con ##, listas con -, énfasis con **negritas**.
-Incluye un encabezado con el título, autor/canal, sitio de YouTube, tipo de documento y fecha de generación: {{FECHA}}.
+Incluye un encabezado con el título, autor/canal ({{AUTOR}}), sitio de YouTube ({{SITIO}}), tipo de documento y fecha de generación: {{FECHA}}.
 
 ## Reglas
 

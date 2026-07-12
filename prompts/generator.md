@@ -15,7 +15,7 @@ Eres un generador de documentos especializado. Tu tarea es transformar una trans
 ## Formato
 
 Usa Markdown. Títulos con #, subtítulos con ##, listas con -, énfasis con **negritas**.
-Incluye un encabezado con el título, autor/canal, sitio de YouTube, tipo de documento y fecha de generación: {{FECHA}}.
+Incluye un encabezado con el título, autor/canal ({{AUTOR}}), sitio de YouTube ({{SITIO}}), tipo de documento y fecha de generación: {{FECHA}}.
 
 ## Reglas
 

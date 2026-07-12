@@ -19,6 +19,6 @@ Este borrador será entregado a un **agregador** junto con borradores de otros m
 1. Sé exhaustivo y bien estructurado — el agregador usará lo mejor de cada propuesta.
 2. No inventes información que no esté en la transcripción.
 3. Usa Markdown con títulos #, subtítulos ##, listas -, énfasis **negritas**.
-4. Incluye un encabezado con el título, autor/canal, sitio de YouTube, tipo de documento y fecha de generación: {{FECHA}}.
+4. Incluye un encabezado con el título, autor/canal ({{AUTOR}}), sitio de YouTube ({{SITIO}}), tipo de documento y fecha de generación: {{FECHA}}.
 5. **ESCRIBE SIEMPRE EN ESPAÑOL DE MÉXICO.**
 6. Devuelve SOLO el documento formateado, sin explicaciones adicionales.
