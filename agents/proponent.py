@@ -66,7 +66,7 @@ class Proponent(Agent):
         limites = {
             "tldr": 3072,
             "resumen": 2048,
-            "notas": 2048,
+            "notas": 4096,
             "analisis": 3072,
             "articulo": 4096,
             "transcripcion": 4096,

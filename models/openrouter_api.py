@@ -8,6 +8,7 @@ Modo de uso:
 
 import os
 import time
+import warnings
 from typing import Optional
 
 from openai import OpenAI
@@ -71,6 +72,16 @@ class OpenRouterClient:
                         "Modelo devolvió respuesta vacía (content=None) — "
                         "posiblemente una llamada a herramienta o error de formato"
                     )
+
+                # Detectar si el modelo cortó la respuesta por límite de tokens
+                finish_reason = resp.choices[0].finish_reason
+                if finish_reason == "length":
+                    warnings.warn(
+                        f"Respuesta truncada por límite de tokens (max_tokens={max_tokens}). "
+                        f"Se recibieron ~{len(content.split())} palabras. "
+                        "Considera aumentar max_tokens para este tipo."
+                    )
+
                 return content.strip()
 
             except Exception as e:
